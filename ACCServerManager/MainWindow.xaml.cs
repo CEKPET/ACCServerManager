@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -10,6 +11,8 @@ namespace ACCServerManager
 {
     public partial class MainWindow : Window
     {
+        private List<Track> tracks = new List<Track>();
+        private Track selectedTrack = null;
         private List<Session> sessions = new List<Session>();
 
         public MainWindow()
@@ -20,13 +23,24 @@ namespace ACCServerManager
 
         private void LoadTracks()
         {
-            var tracks = new List<string>
+            try
             {
-                "barcelona", "brands_hatch", "hungaroring", "misano", "monza",
-                "nurburgring", "paul_ricard", "silverstone", "spa", "zandvoort", "zolder"
-            };
+                string json = File.ReadAllText("tracks.json");
+                tracks = JsonConvert.DeserializeObject<List<Track>>(json);
 
-            TrackComboBox.ItemsSource = tracks;
+                foreach (var track in tracks)
+                {
+                    TrackListBox.Items.Add(new ListBoxItem
+                    {
+                        Content = track.Name,
+                        Tag = track
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки трасс: {ex.Message}");
+            }
         }
 
         private void PreRaceWaitingTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -43,6 +57,52 @@ namespace ACCServerManager
         {
             AmbientTempTextBox.Text = ((int)e.NewValue).ToString();
         }
+
+        private void ShowTrackSlider_Click(object sender, RoutedEventArgs e)
+        {
+            TrackSliderPanel.Visibility = Visibility.Visible;
+            TrackCardPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void ConfirmTrackSelection_Click(object sender, RoutedEventArgs e)
+        {
+            if (TrackListBox.SelectedItem is ListBoxItem selectedItem && selectedItem.Tag is Track track)
+            {
+                selectedTrack = track;
+
+                TrackNameText.Text = $"Трасса: {track.Name}";
+                TrackTurnsText.Text = $"Повороты: {track.Turns}";
+                TrackRecordText.Text = $"Рекорд круга: {track.Record}";
+
+                try
+                {
+                    // Проверяем, существует ли изображение
+                    if (File.Exists(track.ImagePath))
+                    {
+                        string fullPath = Path.GetFullPath(track.ImagePath);
+                        TrackImage.Source = new BitmapImage(new Uri(fullPath, UriKind.Absolute));
+                    }
+                    else
+                    {
+                        TrackImage.Source = null;
+                        MessageBox.Show($"Изображение не найдено: {track.ImagePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TrackImage.Source = null;
+                    MessageBox.Show($"Ошибка загрузки изображения: {ex.Message}");
+                }
+
+                TrackSliderPanel.Visibility = Visibility.Collapsed;
+                TrackCardPanel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                MessageBox.Show("Выберите трассу.");
+            }
+        }
+
 
         private void AddSessionButton_Click(object sender, RoutedEventArgs e)
         {
@@ -129,7 +189,7 @@ namespace ACCServerManager
                 // Собираем данные для JSON
                 var eventConfig = new EventConfig
                 {
-                    Track = TrackComboBox.SelectedItem?.ToString(),
+                    Track = selectedTrack?.ID,
                     PreRaceWaitingTimeSeconds = preRaceWaitingTime,
                     SessionOverTimeSeconds = sessionOverTime,
                     AmbientTemp = ambientTemp,
@@ -206,6 +266,15 @@ namespace ACCServerManager
 
             [JsonProperty("configVersion")]
             public int ConfigVersion { get; set; }
+        }
+
+        public class Track
+        {
+            public string ID { get; set; }
+            public string Name { get; set; }
+            public string ImagePath { get; set; }
+            public int Turns { get; set; }
+            public string Record { get; set; }
         }
 
         public class Session
