@@ -1,15 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Text.Json;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media.Imaging;
-
 
 namespace ACCServerManager
 {
@@ -34,9 +27,23 @@ namespace ACCServerManager
             TrackComboBox.ItemsSource = tracks;
         }
 
+        private void PreRaceWaitingTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            PreRaceWaitingTimeTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
+        private void SessionOverTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            SessionOverTimeTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
+        private void AmbientTempSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            AmbientTempTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
         private void AddSessionButton_Click(object sender, RoutedEventArgs e)
         {
-            // Логика добавления сессии
             var session = new Session
             {
                 HourOfDay = 12,
@@ -52,22 +59,39 @@ namespace ACCServerManager
 
         private void GenerateJsonButton_Click(object sender, RoutedEventArgs e)
         {
-            var eventConfig = new EventConfig
+            try
             {
-                Track = TrackComboBox.SelectedItem?.ToString() ?? "zolder",
-                PreRaceWaitingTimeSeconds = int.Parse(PreRaceWaitingTimeTextBox.Text),
-                SessionOverTimeSeconds = int.Parse(SessionOverTimeTextBox.Text),
-                AmbientTemp = int.Parse(AmbientTempTextBox.Text),
-                CloudLevel = double.Parse(CloudLevelComboBox.Text),
-                Rain = 0.0, // Пример
-                WeatherRandomness = 1, // Пример
-                Sessions = sessions,
-                ConfigVersion = 1
-            };
+                double rain;
+                switch (RainComboBox.SelectedIndex)
+                {
+                    case 0: rain = 0.0; break;
+                    case 1: rain = 0.2; break;
+                    case 2: rain = 0.5; break;
+                    case 3: rain = 0.7; break;
+                    case 4: rain = 1.0; break;
+                    default: rain = 0.0; break;
+                }
+                var eventConfig = new EventConfig
+                {
+                    Track = TrackComboBox.SelectedItem?.ToString() ?? "zolder",
+                    PreRaceWaitingTimeSeconds = int.Parse(PreRaceWaitingTimeTextBox.Text),
+                    SessionOverTimeSeconds = int.Parse(SessionOverTimeTextBox.Text),
+                    AmbientTemp = int.Parse(AmbientTempTextBox.Text),
+                    CloudLevel = double.Parse(CloudLevelComboBox.Text),
+                    Rain = rain,
+                    WeatherRandomness = WeatherRandomnessComboBox.SelectedIndex,
+                    Sessions = sessions,
+                    ConfigVersion = 1
+                };
 
-            string json = JsonConvert.SerializeObject(eventConfig, Formatting.Indented);
-            File.WriteAllText("event.json", json);
-            MessageBox.Show("JSON файл успешно создан!");
+                string json = JsonConvert.SerializeObject(eventConfig, Formatting.Indented);
+                File.WriteAllText("event.json", json);
+                MessageBox.Show("JSON файл успешно создан!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка генерации JSON: {ex.Message}");
+            }
         }
     }
 
