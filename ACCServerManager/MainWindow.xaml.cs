@@ -1,9 +1,10 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace ACCServerManager
 {
@@ -154,6 +155,16 @@ namespace ACCServerManager
                     ConfigVersion = 1
                 };
 
+                // Создаем настройки для сериализации
+                var settings = new JsonSerializerSettings
+                {
+                    Formatting = Formatting.Indented, // Читаемый формат
+                    ContractResolver = new DefaultContractResolver
+                    {
+                        NamingStrategy = new CamelCaseNamingStrategy() // Все ключи в нижнем регистре
+                    }
+                };
+
                 // Генерация JSON
                 string json = JsonConvert.SerializeObject(eventConfig, Formatting.Indented);
                 File.WriteAllText("event.json", json);
@@ -169,23 +180,49 @@ namespace ACCServerManager
 
         public class EventConfig
         {
+            [JsonProperty("track")]
             public string Track { get; set; }
+
+            [JsonProperty("preRaceWaitingTimeSeconds")]
             public int PreRaceWaitingTimeSeconds { get; set; }
+
+            [JsonProperty("sessionOverTimeSeconds")]
             public int SessionOverTimeSeconds { get; set; }
+
+            [JsonProperty("ambientTemp")]
             public int AmbientTemp { get; set; }
+
+            [JsonProperty("cloudLevel")]
             public double CloudLevel { get; set; }
+
+            [JsonProperty("rain")]
             public double Rain { get; set; }
+
+            [JsonProperty("weatherRandomness")]
             public int WeatherRandomness { get; set; }
+
+            [JsonProperty("sessions")]
             public List<Session> Sessions { get; set; }
+
+            [JsonProperty("configVersion")]
             public int ConfigVersion { get; set; }
         }
 
         public class Session
         {
+            [JsonProperty("hourOfDay")]
             public int HourOfDay { get; set; }
+
+            [JsonProperty("dayOfWeekend")]
             public int DayOfWeekend { get; set; }
+
+            [JsonProperty("timeMultiplier")]
             public int TimeMultiplier { get; set; }
+
+            [JsonProperty("sessionType")]
             public string SessionType { get; set; }
+
+            [JsonProperty("sessionDurationMinutes")]
             public int SessionDurationMinutes { get; set; }
         }
     }
