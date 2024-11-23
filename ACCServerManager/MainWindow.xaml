@@ -1,14 +1,13 @@
 ﻿<Window x:Class="ACCServerManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         xmlns:local="clr-namespace:ACCServerManager"
         Title="ACC Event Generator" Height="904" Width="1191">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="0">
+    <Window.Resources>
+        <local:SelectionToColorConverter x:Key="SelectionToColorConverter" />
+    </Window.Resources>
+    <Grid Margin="10" HorizontalAlignment="Right">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="10">
                 <!-- Выбор трассы -->
                 <TextBlock Text="Трасса" FontWeight="Bold" Margin="0,0,0,5"/>
@@ -16,11 +15,31 @@
 
                 <!-- Слайдер с трассами -->
                 <StackPanel Name="TrackSliderPanel" Visibility="Collapsed" Margin="0,10,0,10">
-                    <ListBox Name="TrackListBox" SelectionMode="Single" Height="300">
-                        <!-- Трассы будут добавлены динамически -->
-                    </ListBox>
-                    <Button Content="Подтвердить выбор" Click="ConfirmTrackSelection_Click" Width="200" Margin="0,10,0,0"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled" Height="300">
+                        <ListBox Name="TrackListControl" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Visible">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Margin="5" 
+                        Background="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource SelectionToColorConverter}}">
+                                        <StackPanel Width="200" Height="250" Margin="5">
+                                            <Image Source="{Binding ImagePath}" Width="200" Height="150" Stretch="UniformToFill" />
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16" TextAlignment="Center" Margin="5" />
+                                            <TextBlock Text="{Binding Turns, StringFormat='Повороты: {0}'}" TextAlignment="Center" Margin="5,0,5,0" />
+                                            <TextBlock Text="{Binding Record, StringFormat='Рекорд: {0}'}" TextAlignment="Center" Margin="5,0,5,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
+                    <Button Content="Подтвердить выбор" Click="ConfirmTrackSelection_Click" Width="200" Margin="0,10,0,0" />
                 </StackPanel>
+
 
                 <!-- Карточка выбранной трассы -->
                 <StackPanel Name="TrackCardPanel" Visibility="Collapsed" Margin="0,10,0,10">
@@ -33,14 +52,14 @@
                 <!-- Поля для времени ожидания и завершения -->
                 <TextBlock Text="Время ожидания перед стартом (сек)" FontWeight="Bold" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                    <TextBox Name="PreRaceWaitingTimeTextBox" Width="100" Margin="0,0,10,0"/>
+                    <TextBox Name="PreRaceWaitingTimeTextBox" Width="100" Margin="0,0,10,0" Text="30"/>
                     <Slider Name="PreRaceWaitingTimeSlider" Minimum="30" Maximum="300" Width="200"
                             ValueChanged="PreRaceWaitingTimeSlider_ValueChanged"/>
                 </StackPanel>
 
                 <TextBlock Text="Время завершения сессии (сек)" FontWeight="Bold" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                    <TextBox Name="SessionOverTimeTextBox" Width="100" Margin="0,0,10,0"/>
+                    <TextBox Name="SessionOverTimeTextBox" Width="100" Margin="0,0,10,0" Text="180"/>
                     <Slider Name="SessionOverTimeSlider" Minimum="180" Maximum="600" Width="200"
                             ValueChanged="SessionOverTimeSlider_ValueChanged"/>
                 </StackPanel>
@@ -50,14 +69,14 @@
                     <StackPanel Margin="10">
                         <TextBlock Text="Температура воздуха (°C)" FontWeight="Bold" Margin="0,0,0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBox Name="AmbientTempTextBox" Width="100" Margin="0,0,10,0"/>
+                            <TextBox Name="AmbientTempTextBox" Width="100" Margin="0,0,10,0" Text="20"/>
                             <Slider Name="AmbientTempSlider" Minimum="5" Maximum="40" Width="200"
-                                    ValueChanged="AmbientTempSlider_ValueChanged"/>
+                                    ValueChanged="AmbientTempSlider_ValueChanged" SmallChange="1" Value="20"/>
                         </StackPanel>
 
                         <TextBlock Text="Облачность" FontWeight="Bold" Margin="0,0,0,5"/>
-                        <ComboBox Name="CloudLevelComboBox" Width="100" Margin="0,0,0,10" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="0.0"/>
+                        <ComboBox Name="CloudLevelComboBox" Width="100" Margin="0,0,0,10" HorizontalAlignment="Left" SelectedValue="{Binding ElementName=comboBoxItem, Mode=OneWay}">
+                            <ComboBoxItem x:Name="comboBoxItem" Content="0.0"/>
                             <ComboBoxItem Content="0.1"/>
                             <ComboBoxItem Content="0.2"/>
                             <ComboBoxItem Content="0.3"/>
@@ -71,8 +90,8 @@
                         </ComboBox>
 
                         <TextBlock Text="Осадки" FontWeight="Bold" Margin="0,0,0,5"/>
-                        <ComboBox Name="RainComboBox" Width="200" Margin="0,0,0,10" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Сухо (0.0)"/>
+                        <ComboBox Name="RainComboBox" Width="200" Margin="0,0,0,10" HorizontalAlignment="Left" SelectedValue="{Binding ElementName=comboBoxItem1, Mode=OneWay}">
+                            <ComboBoxItem x:Name="comboBoxItem1" Content="Сухо (0.0)"/>
                             <ComboBoxItem Content="Легкий дождь (0.2)"/>
                             <ComboBoxItem Content="Дождь (0.5)"/>
                             <ComboBoxItem Content="Сильный дождь (0.7)"/>
@@ -80,8 +99,8 @@
                         </ComboBox>
 
                         <TextBlock Text="Случайность погоды" FontWeight="Bold" Margin="0,0,0,5"/>
-                        <ComboBox Name="WeatherRandomnessComboBox" Width="200" Margin="0,0,0,10" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Статичная (0)"/>
+                        <ComboBox Name="WeatherRandomnessComboBox" Width="200" Margin="0,0,0,10" HorizontalAlignment="Left" SelectedValue="{Binding ElementName=comboBoxItem2, Mode=OneWay}">
+                            <ComboBoxItem x:Name="comboBoxItem2" Content="Статичная (0)"/>
                             <ComboBoxItem Content="Реалистичная (1-4)"/>
                             <ComboBoxItem Content="Сенсационная (5-7)"/>
                         </ComboBox>
@@ -94,13 +113,13 @@
                         <TextBlock Text="Настройки сессии" FontWeight="Bold" Margin="0,0,0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="Время начала" FontWeight="Bold" Margin="15,0,15,0"/>
-                            <ComboBox Name="HourOfDayComboBox" Width="80" Margin="0,0,10,0">
+                            <ComboBox Name="HourOfDayComboBox" Width="80" Margin="0,0,10,0" SelectedValue="{Binding ElementName=comboBoxItem4, Mode=OneWay}">
                                 <!-- 0-23 -->
                                 <ComboBoxItem Content="0"/>
                                 <ComboBoxItem Content="1"/>
                                 <ComboBoxItem Content="2"/>
                                 <ComboBoxItem Content="3"/>
-                                <ComboBoxItem Content="4"/>
+                                <ComboBoxItem x:Name="comboBoxItem4" Content="4"/>
                                 <ComboBoxItem Content="5"/>
                                 <ComboBoxItem Content="6"/>
                                 <ComboBoxItem Content="7"/>
@@ -116,24 +135,24 @@
                                 <ComboBoxItem Content="17"/>
                                 <ComboBoxItem Content="18"/>
                                 <ComboBoxItem Content="19"/>
-                                <ComboBoxItem Content="20"/>
+                                <ComboBoxItem x:Name="comboBoxItem3" Content="20"/>
                                 <ComboBoxItem Content="21"/>
                                 <ComboBoxItem Content="22"/>
                                 <ComboBoxItem Content="23"/>
                             </ComboBox>
 
                             <TextBlock Text="День сессии" FontWeight="Bold" Margin="15,0,15,0"/>
-                            <ComboBox Name="DayOfWeekendComboBox" Width="100" Margin="0,0,10,0">
-                                <ComboBoxItem Content="Пятница (1)"/>
+                            <ComboBox Name="DayOfWeekendComboBox" Width="100" Margin="0,0,10,0" SelectedValue="{Binding ElementName=comboBoxItem5, Mode=OneWay}">
+                                <ComboBoxItem x:Name="comboBoxItem5" Content="Пятница (1)"/>
                                 <ComboBoxItem Content="Суббота (2)"/>
                                 <ComboBoxItem Content="Воскресенье (3)"/>
                             </ComboBox>
-                            
+
                             <TextBlock Text="Игровой час к реальному" FontWeight="Bold" Margin="15,0,15,0"/>
-                            <ComboBox Name="TimeMultiplierComboBox" Width="80" Margin="0,0,10,0">
+                            <ComboBox Name="TimeMultiplierComboBox" Width="80" Margin="0,0,10,0" SelectedValue="{Binding ElementName=comboBoxItem6, Mode=OneWay}">
                                 <!-- Значения 0-24 -->
                                 <ComboBoxItem Content="0"/>
-                                <ComboBoxItem Content="1"/>
+                                <ComboBoxItem x:Name="comboBoxItem6" Content="1"/>
                                 <ComboBoxItem Content="2"/>
                                 <ComboBoxItem Content="3"/>
                                 <ComboBoxItem Content="4"/>
@@ -160,19 +179,19 @@
                             </ComboBox>
 
                             <TextBlock Text="Тип" FontWeight="Bold" Margin="15,0,15,0"/>
-                            <ComboBox Name="SessionTypeComboBox" Width="100" Margin="0,0,10,0">
-                                <ComboBoxItem Content="P (Практика)"/>
+                            <ComboBox Name="SessionTypeComboBox" Width="100" Margin="0,0,10,0" SelectedValue="{Binding ElementName=comboBoxItem7, Mode=OneWay}">
+                                <ComboBoxItem x:Name="comboBoxItem7" Content="P (Практика)"/>
                                 <ComboBoxItem Content="Q (Квалификация)"/>
                                 <ComboBoxItem Content="R (Гонка)"/>
                             </ComboBox>
-                            
+
                             <TextBlock Text="Продолжительность(Мин.)" FontWeight="Bold" Margin="15,0,15,0"/>
-                            <TextBox Name="SessionDurationTextBox" Width="80" Margin="0,0,10,0"/>
+                            <TextBox Name="SessionDurationTextBox" Width="80" Margin="0,0,10,0" Text="20"/>
                         </StackPanel>
                         <Button Content="Добавить сессию" Click="AddSessionButton_Click" Width="150" Margin="0,0,0,10" HorizontalAlignment="Left"/>
                         <Button Content="Удалить выбранную сессию" Click="RemoveSessionButton_Click" Width="200" HorizontalAlignment="Left"/>
                         <ListBox Name="SessionsListBox" Height="100" Margin="0,0,0,10"/>
-                        
+
                     </StackPanel>
                 </GroupBox>
 

@@ -1,0 +1,79 @@
+[
+  {
+    "ID": "barcelona",
+    "Name": "Barcelona",
+    "ImagePath": "Images/barcelona.png",
+    "Turns": 16,
+    "Record": "1:43.667"
+  },
+  {
+    "ID": "brands_hatch",
+    "Name": "Brands_Hatch ",
+    "ImagePath": "Images/brands_hatch.png",
+    "Turns": 9,
+    "Record": "1:23.261"
+  },
+  {
+    "ID": "hungaroring",
+    "Name": "Hungaroring",
+    "ImagePath": "Images/hungaroring.png",
+    "Turns": 14,
+    "Record": "1:42.359"
+  },
+  {
+    "ID": "misano",
+    "Name": "Misano",
+    "ImagePath": "Images/misano.png",
+    "Turns": 16,
+    "Record": "1:33.138"
+  },
+  {
+    "ID": "monza",
+    "Name": "Monza",
+    "ImagePath": "Images/monza.png",
+    "Turns": 11,
+    "Record": "1:47.842"
+  },
+  {
+    "ID": "nurburgring",
+    "Name": "Nürburgring",
+    "ImagePath": "Images/nürburgring.png",
+    "Turns": 17,
+    "Record": "1:56.385"
+  },
+  {
+    "ID": "paul_ricard",
+    "Name": "Paul_Ricard",
+    "ImagePath": "Images/paul_ricard.png",
+    "Turns": 19,
+    "Record": "2:18.578"
+  },
+  {
+    "ID": "silverstone",
+    "Name": "Silverstone",
+    "ImagePath": "Images/silverstone.png",
+    "Turns": 18,
+    "Record": "1:56.637"
+  },
+  {
+    "ID": "spa",
+    "Name": "Spa-Francochamps",
+    "ImagePath": "Images/spa-francochamps.png",
+    "Turns": 11,
+    "Record": "1:19.525"
+  },
+  {
+    "ID": "zandvoort",
+    "Name": "Zandvoort",
+    "ImagePath": "Images/zandvoort.png",
+    "Turns": 14,
+    "Record": "1:22.849"
+  },
+  {
+    "ID": "zolder",
+    "Name": "Zolder",
+    "ImagePath": "Images/zolder.png",
+    "Turns": 10,
+    "Record": "1:28.363"
+  }
+]

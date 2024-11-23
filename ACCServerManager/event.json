@@ -1,0 +1,19 @@
+{
+  "track": "barcelona",
+  "preRaceWaitingTimeSeconds": 30,
+  "sessionOverTimeSeconds": 180,
+  "ambientTemp": 5,
+  "cloudLevel": 0.0,
+  "rain": 0.0,
+  "weatherRandomness": 0,
+  "sessions": [
+    {
+      "hourOfDay": 0,
+      "dayOfWeekend": 1,
+      "timeMultiplier": 1,
+      "sessionType": "P",
+      "sessionDurationMinutes": 20
+    }
+  ],
+  "configVersion": 1
+}

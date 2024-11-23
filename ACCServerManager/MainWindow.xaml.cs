@@ -6,6 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Globalization;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ACCServerManager
 {
@@ -15,27 +19,130 @@ namespace ACCServerManager
         private Track selectedTrack = null;
         private List<Session> sessions = new List<Session>();
 
+        private string eventJsonPath;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            // Загружаем путь из настроек
+            LoadEventJsonPath();
+
+            // Если путь не задан, просим пользователя указать
+            if (string.IsNullOrEmpty(eventJsonPath) || !File.Exists(Path.Combine(eventJsonPath, "event.json")))
+            {
+                MessageBox.Show("Не указан путь к файлу event.json. Выберите папку.", "Внимание");
+                SelectEventJsonPath();
+            }
+
+            // Пытаемся загрузить данные из файла
+            LoadEventJson();
+            
             LoadTracks();
+
+            TrackListControl.SelectedIndex = -1;
+        }
+        private void LoadEventJsonPath()
+        {
+            eventJsonPath = Properties.Settings.Default.EventJsonPath;
+
+            if (!string.IsNullOrEmpty(eventJsonPath) && Directory.Exists(eventJsonPath))
+            {
+                // Проверяем наличие файла
+                string fullPath = Path.Combine(eventJsonPath, "event.json");
+                if (!File.Exists(fullPath))
+                {
+                    MessageBox.Show($"Файл event.json не найден по пути {eventJsonPath}", "Ошибка");
+                }
+            }
+        }
+        private void LoadEventJson()
+        {
+            try
+            {
+                string fullPath = Path.Combine(eventJsonPath, "event.json");
+                //MessageBox.Show($"Путь к event.json: {fullPath}");
+
+                if (File.Exists(fullPath))
+                {
+                    string json = File.ReadAllText(fullPath);
+                    //MessageBox.Show($"JSON содержимое event.json:\n{json}");
+
+                    var eventConfig = JsonConvert.DeserializeObject<EventConfig>(json);
+                    PopulateForm(eventConfig); // Загрузка данных в форму
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки event.json: {ex.Message}");
+            }
+        }
+
+        private void SelectEventJsonPath()
+        {
+            var dialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true,
+                Title = "Выберите папку с event.json"
+            };
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                eventJsonPath = dialog.FileName;
+                Properties.Settings.Default.EventJsonPath = eventJsonPath;
+                Properties.Settings.Default.Save();
+            }
+            else
+            {
+                MessageBox.Show("Путь не был выбран. Приложение не может продолжить.", "Ошибка");
+                Close(); // Закрываем приложение, если путь не задан
+            }
+        }
+
+        
+
+        private void PopulateForm(EventConfig config)
+        {
+            PreRaceWaitingTimeTextBox.Text = config.PreRaceWaitingTimeSeconds.ToString();
+            SessionOverTimeTextBox.Text = config.SessionOverTimeSeconds.ToString();
+            AmbientTempTextBox.Text = config.AmbientTemp.ToString();
+            CloudLevelComboBox.SelectedIndex = (int)(config.CloudLevel * 10); // Пример перевода
+            WeatherRandomnessComboBox.SelectedIndex = config.WeatherRandomness;
+            RainComboBox.SelectedIndex = config.Rain > 0.5 ? 2 : 0; // Пример перевода
+
+            SessionsListBox.Items.Clear();
+            foreach (var session in config.Sessions)
+            {
+                SessionsListBox.Items.Add($"Сессия: {session.SessionType}, {session.SessionDurationMinutes} минут");
+            }
         }
 
         private void LoadTracks()
         {
             try
             {
-                string json = File.ReadAllText("tracks.json");
+                string filePath = Path.Combine(Directory.GetCurrentDirectory(), "tracks.json");
+                //MessageBox.Show($"Путь к tracks.json: {filePath}");
+
+                if (!File.Exists(filePath))
+                {
+                    MessageBox.Show("Файл tracks.json не найден!");
+                    return;
+                }
+
+                string json = File.ReadAllText(filePath);
+                //MessageBox.Show($"JSON содержимое:\n{json}");
+
                 tracks = JsonConvert.DeserializeObject<List<Track>>(json);
 
-                foreach (var track in tracks)
+                if (tracks == null || tracks.Count == 0)
                 {
-                    TrackListBox.Items.Add(new ListBoxItem
-                    {
-                        Content = track.Name,
-                        Tag = track
-                    });
+                    MessageBox.Show("Список трасс пуст.");
+                    return;
                 }
+
+                TrackListControl.ItemsSource = tracks; // Привязка данных
+                //MessageBox.Show($"Загружено {tracks.Count} трасс.");
             }
             catch (Exception ex)
             {
@@ -43,30 +150,9 @@ namespace ACCServerManager
             }
         }
 
-        private void PreRaceWaitingTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            PreRaceWaitingTimeTextBox.Text = ((int)e.NewValue).ToString();
-        }
-
-        private void SessionOverTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            SessionOverTimeTextBox.Text = ((int)e.NewValue).ToString();
-        }
-
-        private void AmbientTempSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            AmbientTempTextBox.Text = ((int)e.NewValue).ToString();
-        }
-
-        private void ShowTrackSlider_Click(object sender, RoutedEventArgs e)
-        {
-            TrackSliderPanel.Visibility = Visibility.Visible;
-            TrackCardPanel.Visibility = Visibility.Collapsed;
-        }
-
         private void ConfirmTrackSelection_Click(object sender, RoutedEventArgs e)
         {
-            if (TrackListBox.SelectedItem is ListBoxItem selectedItem && selectedItem.Tag is Track track)
+            if (TrackListControl.SelectedItem is Track track)
             {
                 selectedTrack = track;
 
@@ -103,6 +189,26 @@ namespace ACCServerManager
             }
         }
 
+        private void PreRaceWaitingTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            PreRaceWaitingTimeTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
+        private void SessionOverTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            SessionOverTimeTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
+        private void AmbientTempSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            AmbientTempTextBox.Text = ((int)e.NewValue).ToString();
+        }
+
+        private void ShowTrackSlider_Click(object sender, RoutedEventArgs e)
+        {
+            TrackSliderPanel.Visibility = Visibility.Visible;
+            TrackCardPanel.Visibility = Visibility.Collapsed;
+        }
 
         private void AddSessionButton_Click(object sender, RoutedEventArgs e)
         {
@@ -134,6 +240,11 @@ namespace ACCServerManager
             }
         }
 
+        private void ChangePathMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectEventJsonPath(); // Метод для выбора пути к файлу
+            LoadEventJson();       // Перезагрузка данных из нового пути
+        }
 
         private void GenerateJsonButton_Click(object sender, RoutedEventArgs e)
         {
@@ -236,63 +347,78 @@ namespace ACCServerManager
                 MessageBox.Show($"Ошибка генерации JSON: {ex.Message}");
             }
         }
+    }
+    public class EventConfig
+    {
+        [JsonProperty("track")]
+        public string Track { get; set; }
 
+        [JsonProperty("preRaceWaitingTimeSeconds")]
+        public int PreRaceWaitingTimeSeconds { get; set; }
 
-        public class EventConfig
+        [JsonProperty("sessionOverTimeSeconds")]
+        public int SessionOverTimeSeconds { get; set; }
+
+        [JsonProperty("ambientTemp")]
+        public int AmbientTemp { get; set; }
+
+        [JsonProperty("cloudLevel")]
+        public double CloudLevel { get; set; }
+
+        [JsonProperty("rain")]
+        public double Rain { get; set; }
+
+        [JsonProperty("weatherRandomness")]
+        public int WeatherRandomness { get; set; }
+
+        [JsonProperty("sessions")]
+        public List<Session> Sessions { get; set; }
+
+        [JsonProperty("configVersion")]
+        public int ConfigVersion { get; set; }
+    }
+
+    public class Track
+    {
+        public string ID { get; set; }
+        public string Name { get; set; }
+        public string ImagePath { get; set; }
+        public int Turns { get; set; }
+        public string Record { get; set; }
+    }
+
+    public class Session
+    {
+        [JsonProperty("hourOfDay")]
+        public int HourOfDay { get; set; }
+
+        [JsonProperty("dayOfWeekend")]
+        public int DayOfWeekend { get; set; }
+
+        [JsonProperty("timeMultiplier")]
+        public int TimeMultiplier { get; set; }
+
+        [JsonProperty("sessionType")]
+        public string SessionType { get; set; }
+
+        [JsonProperty("sessionDurationMinutes")]
+        public int SessionDurationMinutes { get; set; }
+    }
+
+    public class SelectionToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            [JsonProperty("track")]
-            public string Track { get; set; }
-
-            [JsonProperty("preRaceWaitingTimeSeconds")]
-            public int PreRaceWaitingTimeSeconds { get; set; }
-
-            [JsonProperty("sessionOverTimeSeconds")]
-            public int SessionOverTimeSeconds { get; set; }
-
-            [JsonProperty("ambientTemp")]
-            public int AmbientTemp { get; set; }
-
-            [JsonProperty("cloudLevel")]
-            public double CloudLevel { get; set; }
-
-            [JsonProperty("rain")]
-            public double Rain { get; set; }
-
-            [JsonProperty("weatherRandomness")]
-            public int WeatherRandomness { get; set; }
-
-            [JsonProperty("sessions")]
-            public List<Session> Sessions { get; set; }
-
-            [JsonProperty("configVersion")]
-            public int ConfigVersion { get; set; }
+            if (value is bool isSelected && isSelected)
+            {
+                return Brushes.LightBlue; // Цвет выделения
+            }
+            return Brushes.White; // Цвет по умолчанию
         }
 
-        public class Track
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            public string ID { get; set; }
-            public string Name { get; set; }
-            public string ImagePath { get; set; }
-            public int Turns { get; set; }
-            public string Record { get; set; }
-        }
-
-        public class Session
-        {
-            [JsonProperty("hourOfDay")]
-            public int HourOfDay { get; set; }
-
-            [JsonProperty("dayOfWeekend")]
-            public int DayOfWeekend { get; set; }
-
-            [JsonProperty("timeMultiplier")]
-            public int TimeMultiplier { get; set; }
-
-            [JsonProperty("sessionType")]
-            public string SessionType { get; set; }
-
-            [JsonProperty("sessionDurationMinutes")]
-            public int SessionDurationMinutes { get; set; }
+            throw new NotImplementedException();
         }
     }
 }
